@@ -19,20 +19,38 @@ describe("EVM Functions", function() {
         }
     });
 
-    it("should create evm object if absent", function() {
-        assert.isUndefined(web3.evm);
-        addEvmFunctions(web3);
-        assert.isDefined(web3.evm);
-    });
+    describe("basic setup", function() {
+        it("should create evm object if absent", function() {
+            assert.isUndefined(web3.evm);
+            addEvmFunctions(web3);
+            assert.isDefined(web3.evm);
+        });
 
-    it("should create reuse evm object if present", function() {
-        web3.evm = {
-            pretendField: 1
-        };
-        addEvmFunctions(web3);
-        assert.isDefined(web3.evm);
-        assert.isDefined(web3.evm.increaseTime);
-        assert.strictEqual(web3.evm.pretendField, 1);
+        it("should reuse evm object if present", function() {
+            web3.evm = {
+                pretendField: 1
+            };
+            addEvmFunctions(web3);
+            assert.isDefined(web3.evm);
+            assert.isDefined(web3.evm.increaseTime);
+            assert.strictEqual(web3.evm.pretendField, 1);
+        });
+
+        it("should add increaseTime function if absent", function() {
+            web3.evm = {};
+            assert.isUndefined(web3.evm.increaseTime);
+            addEvmFunctions(web3);
+            assert.isDefined(web3.evm.increaseTime);
+        });
+
+        it("should leave increaseTime unchanged if present", function() {
+            web3.evm = {
+                increaseTime: "increaseTime1"
+            };
+            assert.isDefined(web3.evm.increaseTime);
+            addEvmFunctions(web3);
+            assert.strictEqual(web3.evm.increaseTime, "increaseTime1");
+        });
     });
 
     describe("increaseTime", function() {
