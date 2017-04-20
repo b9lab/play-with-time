@@ -177,7 +177,25 @@ describe("EVM Functions", function() {
                     params: [ 123 ],
                     id: sinon.match.number
                 },
-                "callback1");
+                sinon.match.func);
+        });
+
+        it("should return same if error", function() {
+            web3.currentProvider.sendAsync.yields("error1", "fakeResult1");
+            var callback = sinon.stub();
+            web3.evm.increaseTime(123, callback);
+
+            callback.should.have.been.calledOnce;
+            callback.should.have.been.calledWith("error1", "fakeResult1");
+        });
+
+        it("should process return if ok", function() {
+            web3.currentProvider.sendAsync.yields(null, { result: "fakeResult1" });
+            var callback = sinon.stub();
+            web3.evm.increaseTime(123, callback);
+
+            callback.should.have.been.calledOnce;
+            callback.should.have.been.calledWith(null, "fakeResult1");
         });
     });
 });

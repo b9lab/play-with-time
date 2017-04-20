@@ -5,7 +5,7 @@ module.exports = function(web3) {
 
     if (typeof web3.evm.snapshot === "undefined") {
         /**
-         * @param {!function} callback - Node-type callback.
+         * @param {!function} callback - Node-type callback: error, hex number as string.
          */
         web3.evm.snapshot = function(callback) {
             web3.currentProvider.sendAsync(
@@ -22,7 +22,7 @@ module.exports = function(web3) {
     if (typeof web3.evm.revert === "undefined") {
         /**
          * @param {!number} snapshotId. The snapshot to revert.
-         * @param {!function} callback - Node-type callback.
+         * @param {!function} callback - Node-type callback: error, boolean.
          */
         web3.evm.revert = function(snapshotId, callback) {
             web3.currentProvider.sendAsync(
@@ -39,7 +39,7 @@ module.exports = function(web3) {
     if (typeof web3.evm.increaseTime === "undefined") {
         /**
          * @param {!number} offset. Time in milliseconds by which to advance the EVM.
-         * @param {!function} callback - Node-type callback.
+         * @param {!function} callback - Node-type callback: error, cumulative increase since start.
          */
         web3.evm.increaseTime = function(offset, callback) {
             web3.currentProvider.sendAsync(
@@ -49,7 +49,7 @@ module.exports = function(web3) {
                     params: [ offset ],
                     id: new Date().getTime()
                 },
-                callback);
+                (error, result) => callback(error, error ? result : result.result));
         };
     }
 };

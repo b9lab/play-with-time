@@ -241,7 +241,7 @@ contract("PiggyBank", function(accounts) {
             });
         });
 
-        describe("release later", function() {
+        describe("later", function() {
             beforeEach("should add a holding releasable in 1 hour", function() {
                 return instance.hold(deployStamp + 3600, { from: accounts[ 0 ], value: 1000 });
             });
@@ -254,8 +254,16 @@ contract("PiggyBank", function(accounts) {
 
             it("should advance and release", function() {
                 if (!isTestRPC) this.skip("Needs TestRPC");
-                return web3.evm.increaseTimePromise(3600)
-                    .then(advance => instance.release(0, { from: accounts[ 0 ] }))
+                let increaseBefore;
+                return web3.evm.increaseTimePromise(0)
+                    .then(_increaseBefore => {
+                        increaseBefore = _increaseBefore;
+                        return web3.evm.increaseTimePromise(3600);
+                    })
+                    .then(increase => {
+                        assert.strictEqual(increase, increaseBefore + 3600);
+                        return instance.release(0, { from: accounts[ 0 ] });
+                    })
                     .then(txObject => {
                         const eventArgs = txObject.logs[ 0 ].args;
                         assert.strictEqual(eventArgs.id.toNumber(), 0);
