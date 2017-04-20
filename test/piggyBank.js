@@ -61,6 +61,36 @@ contract("PiggyBank", function(accounts) {
                 })
                 .then(balance => assert.strictEqual(balance.toNumber(), 1000));
         });
+
+        it("should be possible to use snapshot and revert to undo hold", function() {
+            if (!isTestRPC) this.skip("Needs TestRPC");
+            let snapshotId, blockNumber;
+            return web3.evm.snapshotPromise()
+                .then(_snapshotId => {
+                    snapshotId = _snapshotId;
+                    return web3.eth.getBlockNumberPromise();
+                })
+                .then(_blockNumber => {
+                    blockNumber = _blockNumber;
+                    return instance.hold(500, { from: accounts[ 0 ], value: 1000 });
+                })
+                .then(txObject => {
+                    return web3.eth.getBlockNumberPromise();
+                })
+                .then(_blockNumber => {
+                    assert.strictEqual(_blockNumber, blockNumber + 1);
+                    return web3.evm.revertPromise(snapshotId);
+                })
+                .then(result => {
+                    assert.isTrue(result);
+                    return instance.heldCount();
+                })
+                .then(heldCount => {
+                    assert.strictEqual(heldCount.toNumber(), 0);
+                    return web3.eth.getBlockNumberPromise();
+                })
+                .then(_blockNumber => assert.strictEqual(_blockNumber, blockNumber));
+        });
     });
 
     describe("hold 2 by same", function() {
