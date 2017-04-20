@@ -52,4 +52,20 @@ module.exports = function(web3) {
                 (error, result) => callback(error, error ? result : result.result));
         };
     }
+
+    if (typeof web3.evm.mine === "undefined") {
+        /**
+         * @param {!function} callback - Node-type callback: error only.
+         */
+        web3.evm.mine = function(callback) {
+            web3.currentProvider.sendAsync(
+                {
+                    jsonrpc: "2.0",
+                    method: "evm_mine",
+                    params: [],
+                    id: new Date().getTime()
+                },
+                (error, result) => callback(error, error ? result : result.result));
+        };
+    }
 };

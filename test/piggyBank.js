@@ -62,7 +62,7 @@ contract("PiggyBank", function(accounts) {
                 .then(balance => assert.strictEqual(balance.toNumber(), 1000));
         });
 
-        it("should be possible to use snapshot and revert to undo hold", function() {
+        it("should be possible to use snapshot and revert 2 blocks to undo hold", function() {
             if (!isTestRPC) this.skip("Needs TestRPC");
             let snapshotId, blockNumber;
             return web3.evm.snapshotPromise()
@@ -79,6 +79,13 @@ contract("PiggyBank", function(accounts) {
                 })
                 .then(_blockNumber => {
                     assert.strictEqual(_blockNumber, blockNumber + 1);
+                    return web3.evm.minePromise();
+                })
+                .then(() => {
+                    return web3.eth.getBlockNumberPromise();
+                })
+                .then(_blockNumber => {
+                    assert.strictEqual(_blockNumber, blockNumber + 2);
                     return web3.evm.revertPromise(snapshotId);
                 })
                 .then(result => {

@@ -83,6 +83,22 @@ describe("EVM Functions", function() {
             addEvmFunctions(web3);
             assert.strictEqual(web3.evm.increaseTime, "increaseTime1");
         });
+
+        it("should add mine function if absent", function() {
+            web3.evm = {};
+            assert.isUndefined(web3.evm.mine);
+            addEvmFunctions(web3);
+            assert.isDefined(web3.evm.mine);
+        });
+
+        it("should leave mine unchanged if present", function() {
+            web3.evm = {
+                mine: "mine1"
+            };
+            assert.isDefined(web3.evm.mine);
+            addEvmFunctions(web3);
+            assert.strictEqual(web3.evm.mine, "mine1");
+        });
     });
 
     describe("snapshot", function() {
@@ -193,6 +209,44 @@ describe("EVM Functions", function() {
             web3.currentProvider.sendAsync.yields(null, { result: "fakeResult1" });
             var callback = sinon.stub();
             web3.evm.increaseTime(123, callback);
+
+            callback.should.have.been.calledOnce;
+            callback.should.have.been.calledWith(null, "fakeResult1");
+        });
+    });
+
+    describe("mine", function() {
+        beforeEach("should add EVM functions", function() {
+            addEvmFunctions(web3);
+        });
+
+        it("should pass parameter along", function() {
+            const callback = "callback1";
+            web3.evm.mine(callback);
+            web3.currentProvider.sendAsync.should.have.been.calledOnce;
+            web3.currentProvider.sendAsync.should.have.been.calledWith(
+                {
+                    jsonrpc: "2.0",
+                    method: "evm_mine",
+                    params: [],
+                    id: sinon.match.number
+                },
+                sinon.match.func);
+        });
+
+        it("should return same if error", function() {
+            web3.currentProvider.sendAsync.yields("error1", "fakeResult1");
+            var callback = sinon.stub();
+            web3.evm.mine(callback);
+
+            callback.should.have.been.calledOnce;
+            callback.should.have.been.calledWith("error1", "fakeResult1");
+        });
+
+        it("should process return if ok", function() {
+            web3.currentProvider.sendAsync.yields(null, { result: "fakeResult1" });
+            var callback = sinon.stub();
+            web3.evm.mine(callback);
 
             callback.should.have.been.calledOnce;
             callback.should.have.been.calledWith(null, "fakeResult1");
