@@ -6,5 +6,6 @@ Try it yourself:
 
 ```sh
 $ npm install
+$ npm run testrpc
 $ npm run truffle test
 ```

@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "truffle": "./node_modules/.bin/truffle"
+    "truffle": "./node_modules/.bin/truffle",
+    "testrpc": "./node_modules/.bin/testrpc"
   },
   "author": "",
   "license": "ISC",
