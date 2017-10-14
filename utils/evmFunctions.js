@@ -15,7 +15,7 @@ module.exports = function(web3) {
                     params: [],
                     id: new Date().getTime()
                 },
-                (error, result) => callback(error, error ? result : result.result));
+                (error, result) => callback(error, error ? undefined : result.result));
         };
     }
 
@@ -32,7 +32,7 @@ module.exports = function(web3) {
                     params: [ snapshotId ],
                     id: new Date().getTime()
                 },
-                (error, result) => callback(error, error ? result : result.result));
+                (error, result) => callback(error, error ? undefined : result.result));
         };
     }
 
@@ -49,7 +49,7 @@ module.exports = function(web3) {
                     params: [ offset ],
                     id: new Date().getTime()
                 },
-                (error, result) => callback(error, error ? result : result.result));
+                (error, result) => callback(error, error ? undefined : result.result));
         };
     }
 
@@ -65,7 +65,7 @@ module.exports = function(web3) {
                     params: [],
                     id: new Date().getTime()
                 },
-                (error, result) => callback(error, error ? result : result.result));
+                (error, result) => callback(error, error ? undefined : result.result));
         };
     }
 };
