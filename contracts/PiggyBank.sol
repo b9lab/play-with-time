@@ -23,12 +23,10 @@ contract PiggyBank {
 
     function release(uint id) {
         Held held = holdings[id];
-        if (now < held.releaseOn) throw;
+        require(held.releaseOn <= now);
         uint amount = held.amount;
         LogReleased(id, held.forWhom, amount);
         held.amount = 0;
-        if (!held.forWhom.send(amount)) {
-            throw;
-        }
+        held.forWhom.transfer(amount);
     }
 }
