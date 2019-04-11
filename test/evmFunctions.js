@@ -14,7 +14,7 @@ describe("EVM Functions", function() {
     beforeEach("should mock web3", function() {
         web3 = {
             currentProvider: {
-                sendAsync: sinon.stub()
+                send: sinon.stub()
             }
         }
     });
@@ -107,35 +107,31 @@ describe("EVM Functions", function() {
         });
 
         it("should pass parameter along", function() {
-            const callback = "callback1";
-            web3.evm.snapshot(callback);
-            web3.currentProvider.sendAsync.should.have.been.calledOnce;
-            web3.currentProvider.sendAsync.should.have.been.calledWith(
-                {
-                    jsonrpc: "2.0",
-                    method: "evm_snapshot",
-                    params: [],
-                    id: sinon.match.number
-                },
-                sinon.match.func);
+            const received = web3.evm.snapshot();
+            assert.strictEqual(typeof received.then, "function");
+            web3.currentProvider.send.should.have.been.calledOnce;
+            web3.currentProvider.send.should.have.been.calledWith({
+                jsonrpc: "2.0",
+                method: "evm_snapshot",
+                params: [],
+                id: sinon.match.number
+            });
         });
 
-        it("should return same if error", function() {
-            web3.currentProvider.sendAsync.yields("error1", "fakeResult1");
-            var callback = sinon.stub();
-            web3.evm.snapshot(callback);
-
-            callback.should.have.been.calledOnce;
-            callback.should.have.been.calledWith("error1", "fakeResult1");
+        it("should return same if error", function(done) {
+            web3.currentProvider.send.yields("error1", "fakeResult1");
+            web3.evm.snapshot()
+                .then(() => done("Should not have reached here"))
+                .catch(error => {
+                    done(error == "error1" ? undefined : "Did not pass error");
+                });
         });
 
-        it("should process return if ok", function() {
-            web3.currentProvider.sendAsync.yields(null, { result: "fakeResult1" });
-            var callback = sinon.stub();
-            web3.evm.snapshot(callback);
-
-            callback.should.have.been.calledOnce;
-            callback.should.have.been.calledWith(null, "fakeResult1");
+        it("should process return if ok", function(done) {
+            web3.currentProvider.send.yields(null, { result: "fakeResult1" });
+            web3.evm.snapshot()
+                .then(result => done(result == "fakeResult1" ? undefined : "Did not pass result"))
+                .catch(done);
         });
     });
 
@@ -145,35 +141,31 @@ describe("EVM Functions", function() {
         });
 
         it("should pass parameter along", function() {
-            const callback = "callback1";
-            web3.evm.revert(123, callback);
-            web3.currentProvider.sendAsync.should.have.been.calledOnce;
-            web3.currentProvider.sendAsync.should.have.been.calledWith(
-                {
-                    jsonrpc: "2.0",
-                    method: "evm_revert",
-                    params: [ 123 ],
-                    id: sinon.match.number
-                },
-                sinon.match.func);
+            const received = web3.evm.revert(123);
+            assert.strictEqual(typeof received.then, "function");
+            web3.currentProvider.send.should.have.been.calledOnce;
+            web3.currentProvider.send.should.have.been.calledWith({
+                jsonrpc: "2.0",
+                method: "evm_revert",
+                params: [ 123 ],
+                id: sinon.match.number
+            });
         });
 
-        it("should return same if error", function() {
-            web3.currentProvider.sendAsync.yields("error1", "fakeResult1");
-            var callback = sinon.stub();
-            web3.evm.revert("fakeId1", callback);
-
-            callback.should.have.been.calledOnce;
-            callback.should.have.been.calledWith("error1", "fakeResult1");
+        it("should return same if error", function(done) {
+            web3.currentProvider.send.yields("error1", "fakeResult1");
+            web3.evm.revert("fakeId1")
+                .then(() => done("Should not have reached here"))
+                .catch(error => {
+                    done(error == "error1" ? undefined : "Did not pass error");
+                });
         });
 
-        it("should process return if ok", function() {
-            web3.currentProvider.sendAsync.yields(null, { result: "fakeResult1" });
-            var callback = sinon.stub();
-            web3.evm.revert("fakeId1", callback);
-
-            callback.should.have.been.calledOnce;
-            callback.should.have.been.calledWith(null, "fakeResult1");
+        it("should process return if ok", function(done) {
+            web3.currentProvider.send.yields(null, { result: "fakeResult1" });
+            web3.evm.revert("fakeId1")
+                .then(result => done(result == "fakeResult1" ? undefined : "Did not pass result"))
+                .catch(done);
         });
     });
 
@@ -183,35 +175,30 @@ describe("EVM Functions", function() {
         });
 
         it("should pass parameter along", function() {
-            const callback = "callback1";
-            web3.evm.increaseTime(123, callback);
-            web3.currentProvider.sendAsync.should.have.been.calledOnce;
-            web3.currentProvider.sendAsync.should.have.been.calledWith(
-                {
-                    jsonrpc: "2.0",
-                    method: "evm_increaseTime",
-                    params: [ 123 ],
-                    id: sinon.match.number
-                },
-                sinon.match.func);
+            const received = web3.evm.increaseTime(123);
+            web3.currentProvider.send.should.have.been.calledOnce;
+            web3.currentProvider.send.should.have.been.calledWith({
+                jsonrpc: "2.0",
+                method: "evm_increaseTime",
+                params: [ 123 ],
+                id: sinon.match.number
+            });
         });
 
-        it("should return same if error", function() {
-            web3.currentProvider.sendAsync.yields("error1", "fakeResult1");
-            var callback = sinon.stub();
-            web3.evm.increaseTime(123, callback);
-
-            callback.should.have.been.calledOnce;
-            callback.should.have.been.calledWith("error1", "fakeResult1");
+        it("should return same if error", function(done) {
+            web3.currentProvider.send.yields("error1", "fakeResult1");
+            web3.evm.increaseTime(123)
+                .then(() => done("Should not have reached here"))
+                .catch(error => {
+                    done(error == "error1" ? undefined : "Did not pass error");
+                });
         });
 
-        it("should process return if ok", function() {
-            web3.currentProvider.sendAsync.yields(null, { result: "fakeResult1" });
-            var callback = sinon.stub();
-            web3.evm.increaseTime(123, callback);
-
-            callback.should.have.been.calledOnce;
-            callback.should.have.been.calledWith(null, "fakeResult1");
+        it("should process return if ok", function(done) {
+            web3.currentProvider.send.yields(null, { result: "fakeResult1" });
+            web3.evm.increaseTime(123)
+                .then(result => done(result == "fakeResult1" ? undefined : "Did not pass result"))
+                .catch(done);
         });
     });
 
@@ -221,35 +208,30 @@ describe("EVM Functions", function() {
         });
 
         it("should pass parameter along", function() {
-            const callback = "callback1";
-            web3.evm.mine(callback);
-            web3.currentProvider.sendAsync.should.have.been.calledOnce;
-            web3.currentProvider.sendAsync.should.have.been.calledWith(
-                {
-                    jsonrpc: "2.0",
-                    method: "evm_mine",
-                    params: [],
-                    id: sinon.match.number
-                },
-                sinon.match.func);
+            const received = web3.evm.mine();
+            web3.currentProvider.send.should.have.been.calledOnce;
+            web3.currentProvider.send.should.have.been.calledWith({
+                jsonrpc: "2.0",
+                method: "evm_mine",
+                params: [],
+                id: sinon.match.number
+            });
         });
 
-        it("should return same if error", function() {
-            web3.currentProvider.sendAsync.yields("error1", "fakeResult1");
-            var callback = sinon.stub();
-            web3.evm.mine(callback);
-
-            callback.should.have.been.calledOnce;
-            callback.should.have.been.calledWith("error1", "fakeResult1");
+        it("should return same if error", function(done) {
+            web3.currentProvider.send.yields("error1", "fakeResult1");
+            web3.evm.mine()
+                .then(() => done("Should not have reached here"))
+                .catch(error => {
+                    done(error == "error1" ? undefined : "Did not pass error");
+                });
         });
 
-        it("should process return if ok", function() {
-            web3.currentProvider.sendAsync.yields(null, { result: "fakeResult1" });
-            var callback = sinon.stub();
-            web3.evm.mine(callback);
-
-            callback.should.have.been.calledOnce;
-            callback.should.have.been.calledWith(null, "fakeResult1");
+        it("should process return if ok", function(done) {
+            web3.currentProvider.send.yields(null, { result: "fakeResult1" });
+            web3.evm.mine()
+                .then(result => done(result == "fakeResult1" ? undefined : "Did not pass result"))
+                .catch(done);
         });
     });
 });

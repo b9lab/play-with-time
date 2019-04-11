@@ -14,7 +14,7 @@
     "ethereumjs-testrpc": "^3.0.3",
     "sinon": "^2.1.0",
     "sinon-chai": "^2.9.0",
-    "truffle": "^3.2.1"
+    "truffle": "5.0.8"
   },
   "dependencies": {
     "bluebird": "^3.5.0"

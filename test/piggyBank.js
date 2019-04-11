@@ -4,15 +4,13 @@ const expectedException = require("../utils/expectedException.js");
 const addEvmFunctions = require("../utils/evmFunctions.js");
 
 contract("PiggyBank", function(accounts) {
-    addEvmFunctions(web3);
-    Promise.promisifyAll(web3.eth, { suffix: "Promise" });
-    Promise.promisifyAll(web3.version, { suffix: "Promise" });
-    Promise.promisifyAll(web3.evm, { suffix: "Promise" });
 
+    addEvmFunctions(web3);
+    const toBN = web3.utils.toBN;
     let isTestRPC;
 
     before("should identify TestRPC", function() {
-        return web3.version.getNodePromise()
+        return web3.eth.getNodeInfo()
             .then(node => isTestRPC = node.indexOf("EthereumJS TestRPC") >= 0);
     });
 
@@ -24,10 +22,9 @@ contract("PiggyBank", function(accounts) {
         });
 
         it("should not be possible to deploy PiggyBank with value", function() {
-            return PiggyBank.new({ from: accounts[ 0 ], value: 1, gas: 3000000 })
-                .then(
-                () => { throw new Error("should have thrown"); },
-                e => assert.strictEqual(e.message, "Cannot send value to non-payable constructor"));
+            return expectedException(
+                () => PiggyBank.new({ from: accounts[ 0 ], value: 1, gas: 3000000 }),
+                3000000);
         });
     });
 
@@ -57,36 +54,36 @@ contract("PiggyBank", function(accounts) {
                     assert.strictEqual(holding[ 0 ], accounts[ 0 ]);
                     assert.strictEqual(holding[ 1 ].toNumber(), 1000);
                     assert.strictEqual(holding[ 2 ].toNumber(), 500);
-                    return web3.eth.getBalancePromise(instance.address);
+                    return web3.eth.getBalance(instance.address);
                 })
-                .then(balance => assert.strictEqual(balance.toNumber(), 1000));
+                .then(balance => assert.strictEqual(balance, "1000"));
         });
 
         it("should be possible to use snapshot and revert 2 blocks to undo hold", function() {
             if (!isTestRPC) this.skip("Needs TestRPC");
             let snapshotId, blockNumber;
-            return web3.evm.snapshotPromise()
+            return web3.evm.snapshot()
                 .then(_snapshotId => {
                     snapshotId = _snapshotId;
-                    return web3.eth.getBlockNumberPromise();
+                    return web3.eth.getBlockNumber();
                 })
                 .then(_blockNumber => {
                     blockNumber = _blockNumber;
                     return instance.hold(500, { from: accounts[ 0 ], value: 1000 });
                 })
                 .then(txObject => {
-                    return web3.eth.getBlockNumberPromise();
+                    return web3.eth.getBlockNumber();
                 })
                 .then(_blockNumber => {
                     assert.strictEqual(_blockNumber, blockNumber + 1);
-                    return web3.evm.minePromise();
+                    return web3.evm.mine();
                 })
                 .then(() => {
-                    return web3.eth.getBlockNumberPromise();
+                    return web3.eth.getBlockNumber();
                 })
                 .then(_blockNumber => {
                     assert.strictEqual(_blockNumber, blockNumber + 2);
-                    return web3.evm.revertPromise(snapshotId);
+                    return web3.evm.revert(snapshotId);
                 })
                 .then(result => {
                     assert.isTrue(result);
@@ -94,7 +91,7 @@ contract("PiggyBank", function(accounts) {
                 })
                 .then(heldCount => {
                     assert.strictEqual(heldCount.toNumber(), 0);
-                    return web3.eth.getBlockNumberPromise();
+                    return web3.eth.getBlockNumber();
                 })
                 .then(_blockNumber => assert.strictEqual(_blockNumber, blockNumber));
         });
@@ -129,9 +126,9 @@ contract("PiggyBank", function(accounts) {
                     assert.strictEqual(holding[ 0 ], accounts[ 0 ]);
                     assert.strictEqual(holding[ 1 ].toNumber(), 700);
                     assert.strictEqual(holding[ 2 ].toNumber(), 1500);
-                    return web3.eth.getBalancePromise(instance.address);
+                    return web3.eth.getBalance(instance.address);
                 })
-                .then(balance => assert.strictEqual(balance.toNumber(), 1700));
+                .then(balance => assert.strictEqual(balance, "1700"));
         });
     });
 
@@ -164,9 +161,9 @@ contract("PiggyBank", function(accounts) {
                     assert.strictEqual(holding[ 0 ], accounts[ 1 ]);
                     assert.strictEqual(holding[ 1 ].toNumber(), 700);
                     assert.strictEqual(holding[ 2 ].toNumber(), 1500);
-                    return web3.eth.getBalancePromise(instance.address);
+                    return web3.eth.getBalance(instance.address);
                 })
-                .then(balance => assert.strictEqual(balance.toNumber(), 1700));
+                .then(balance => assert.strictEqual(balance, "1700"));
         });
     });
 
@@ -177,9 +174,9 @@ contract("PiggyBank", function(accounts) {
             return PiggyBank.new({ from: accounts[ 0 ] })
                 .then(created => {
                     instance = created;
-                    return web3.eth.getTransactionReceiptPromise(created.transactionHash);
+                    return web3.eth.getTransactionReceipt(created.transactionHash);
                 })
-                .then(receipt => web3.eth.getBlockPromise(receipt.blockNumber))
+                .then(receipt => web3.eth.getBlock(receipt.blockNumber))
                 .then(block => deployStamp = block.timestamp);
         });
 
@@ -194,9 +191,9 @@ contract("PiggyBank", function(accounts) {
 
             it("should release right away", function() {
                 let balance0Before;
-                return web3.eth.getBalancePromise(accounts[ 0 ])
+                return web3.eth.getBalance(accounts[ 0 ])
                     .then(balance => {
-                        balance0Before = balance;
+                        balance0Before = toBN(balance);
                         return instance.release(0, { from: accounts[ 0 ] });
                     })
                     .then(txObject => {
@@ -206,25 +203,25 @@ contract("PiggyBank", function(accounts) {
                         assert.strictEqual(eventArgs.amount.toNumber(), 1000);
                         return Promise.all([
                             txObject.receipt,
-                            web3.eth.getTransactionPromise(txObject.tx),
-                            web3.eth.getBalancePromise(accounts[ 0 ])
+                            web3.eth.getTransaction(txObject.tx),
+                            web3.eth.getBalance(accounts[ 0 ])
                         ]);
                     })
                     .then(values => {
                         const balance0After = balance0Before
-                            .minus(values[ 0 ].gasUsed * values[ 1 ].gasPrice)
-                            .plus(1000);
-                        assert.strictEqual(values[ 2 ].toString(10), balance0After.toString(10));
-                        return web3.eth.getBalancePromise(instance.address);
+                            .sub(toBN(values[ 0 ].gasUsed * values[ 1 ].gasPrice))
+                            .add(toBN(1000));
+                        assert.strictEqual(values[ 2 ], balance0After.toString(10));
+                        return web3.eth.getBalance(instance.address);
                     })
-                    .then(balance => assert.strictEqual(balance.toNumber(), 0));
+                    .then(balance => assert.strictEqual(balance, "0"));
             });
 
             it("should release right away, even with another account", function() {
                 let balance0Before;
-                return web3.eth.getBalancePromise(accounts[ 0 ])
+                return web3.eth.getBalance(accounts[ 0 ])
                     .then(balance => {
-                        balance0Before = balance;
+                        balance0Before = toBN(balance);
                         return instance.release(0, { from: accounts[ 1 ] });
                     })
                     .then(txObject => {
@@ -234,17 +231,17 @@ contract("PiggyBank", function(accounts) {
                         assert.strictEqual(eventArgs.amount.toNumber(), 1000);
                         return Promise.all([
                             txObject.receipt,
-                            web3.eth.getTransactionPromise(txObject.tx),
-                            web3.eth.getBalancePromise(accounts[ 0 ])
+                            web3.eth.getTransaction(txObject.tx),
+                            web3.eth.getBalance(accounts[ 0 ])
                         ]);
                     })
                     .then(values => {
                         const balance0After = balance0Before
-                            .plus(1000);
-                        assert.strictEqual(values[ 2 ].toString(10), balance0After.toString(10));
-                        return web3.eth.getBalancePromise(instance.address);
+                            .add(toBN(1000));
+                        assert.strictEqual(values[ 2 ], balance0After.toString(10));
+                        return web3.eth.getBalance(instance.address);
                     })
-                    .then(balance => assert.strictEqual(balance.toNumber(), 0));
+                    .then(balance => assert.strictEqual(balance, "0"));
             });
         });
 
@@ -262,10 +259,10 @@ contract("PiggyBank", function(accounts) {
             it("should advance and release", function() {
                 if (!isTestRPC) this.skip("Needs TestRPC");
                 let increaseBefore;
-                return web3.evm.increaseTimePromise(0)
+                return web3.evm.increaseTime(0)
                     .then(_increaseBefore => {
                         increaseBefore = _increaseBefore;
-                        return web3.evm.increaseTimePromise(3600);
+                        return web3.evm.increaseTime(3600);
                     })
                     .then(increase => {
                         assert.strictEqual(increase, increaseBefore + 3600);
@@ -276,9 +273,9 @@ contract("PiggyBank", function(accounts) {
                         assert.strictEqual(eventArgs.id.toNumber(), 0);
                         assert.strictEqual(eventArgs.forWhom, accounts[ 0 ]);
                         assert.strictEqual(eventArgs.amount.toNumber(), 1000);
-                        return web3.eth.getBalancePromise(instance.address);
+                        return web3.eth.getBalance(instance.address);
                     })
-                    .then(balance => assert.strictEqual(balance.toNumber(), 0));
+                    .then(balance => assert.strictEqual(balance, "0"));
             });
         });
     });
